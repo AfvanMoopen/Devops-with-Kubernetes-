@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgsql-svc
+  namespace: project-ns
+spec:
+  ports:
+  - port: 5432
+  clusterIP: None
+  selector:
+    app: pgapp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: project-ns
+  name: p3e03-backend-svc
+spec:
+  type: NodePort
+  selector:
+    app: p3e03-backend
+  ports:
+  - port: 2345
+    protocol: TCP
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: project-ns
+  name: p3e03-frontend-svc
+spec:
+  type: NodePort
+  selector:
+    app: p3e03-frontend
+  ports:
+  - port: 2346
+    protocol: TCP
+    targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: project-ns
+  name: p3e03-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: p3e03-frontend-svc
+          servicePort: 2346
+      - path: /api/*
+        backend:
+          serviceName: p3e03-backend-svc
+          servicePort: 2345

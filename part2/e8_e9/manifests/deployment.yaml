@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgsql-pwd
+  namespace: project-ns
+data:
+  POSTGRES_PASSWORD: c2FsYXNhbmExMjM0
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pgsql-ss
+  namespace: project-ns
+spec:
+  serviceName: pgsql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgapp
+  template:
+    metadata:
+      labels:
+        app: pgapp
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:12
+          ports:
+            - name: pgsql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: project-ns
+  name: p2e8-backend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p2e8-backend
+  template:
+    metadata:
+      labels:
+        app: p2e8-backend
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: p2e8-back-cont
+          image: mcfizh/dwk-part1:p2e8-backend
+          env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: project-ns
+  name: p2e8-frontend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p2e8-frontend
+  template:
+    metadata:
+      labels:
+        app: p2e8-frontend
+    spec:
+      containers:
+        - name: p2e8-front-cont
+          image: mcfizh/dwk-part1:p2e8-frontend
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  namespace: project-ns
+  name: p2cron
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: p2e8-cron-cont
+            image: mcfizh/dwk-part1:p2e9-cron
+            env:
+              - name: POSTGRES_HOST
+                value: pgsql-svc
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pgsql-pwd
+                    key: POSTGRES_PASSWORD
+          restartPolicy: OnFailure

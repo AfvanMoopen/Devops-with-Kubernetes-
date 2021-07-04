@@ -1,0 +1,65 @@
+name: Release application
+
+on:
+  push:
+
+env:
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: europe-north1-a
+  B_IMAGE: dwk-backend
+  F_IMAGE: dwk-frontend
+  C_IMAGE: dwk-cron
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Create image names
+      run: |-
+        echo "B_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$B_IMAGE:${GITHUB_REF#refs/heads/}-$GITHUB_SHA" >> $GITHUB_ENV
+        echo "F_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$F_IMAGE:${GITHUB_REF#refs/heads/}-$GITHUB_SHA" >> $GITHUB_ENV
+        echo "C_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$C_IMAGE:${GITHUB_REF#refs/heads/}-$GITHUB_SHA" >> $GITHUB_ENV
+
+    - uses: google-github-actions/setup-gcloud@master
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: ${{ secrets.GKE_PROJECT }}
+
+    - run: gcloud --quiet auth configure-docker
+
+    - run: gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+
+    - name: Build
+      run: docker build --tag "$B_IMAGE_WITH_TAG" ./part2/e8_e9/backend
+
+    - name: Build
+      run: docker build --tag "$F_IMAGE_WITH_TAG" ./part2/e8_e9/frontend
+
+    - name: Build
+      run: docker build --tag "$C_IMAGE_WITH_TAG" ./part2/e8_e9/cronjob
+
+    - name: Publish
+      run: |-
+        docker push "$B_IMAGE_WITH_TAG"
+        docker push "$F_IMAGE_WITH_TAG"
+        docker push "$C_IMAGE_WITH_TAG"
+
+    - name: Set up Kustomize
+      run: |-
+        cd part3/e3
+        curl -sfLo kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.7.0/kustomize_v3.7.0_linux_amd64.tar.gz
+        tar xf kustomize.tgz
+        chmod u+x ./kustomize
+
+    - name: Deploy
+      run: |-
+        cd part3/e3
+        ./kustomize edit set image BACKEND/IMAGE=$B_IMAGE_WITH_TAG
+        ./kustomize edit set image FRONTEND/IMAGE=$F_IMAGE_WITH_TAG
+        ./kustomize edit set image CRON/IMAGE=$C_IMAGE_WITH_TAG
+        kubectl apply -k .

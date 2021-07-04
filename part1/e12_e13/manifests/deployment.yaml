@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e13-backend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex13-backend
+  template:
+    metadata:
+      labels:
+        app: ex13-backend
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: ex13
+          image: mcfizh/dwk-part1:exercise13-backend
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e13-frontend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex13-frontend
+  template:
+    metadata:
+      labels:
+        app: ex13-frontend
+    spec:
+      containers:
+        - name: ex13
+          image: mcfizh/dwk-part1:exercise13-frontend

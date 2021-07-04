@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telegram-api-key
+  namespace: project-ns
+data:
+  APIKEY: apikey-goes-here

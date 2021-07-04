@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e11-pong-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex11p
+  template:
+    metadata:
+      labels:
+        app: ex11p
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: ex11p
+          image: mcfizh/dwk-part1:exercise9
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e11-main-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex11m
+  template:
+    metadata:
+      labels:
+        app: ex11m
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: ex11ma
+          image: mcfizh/dwk-part1:exercise10a
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+        - name: ex11mb
+          image: mcfizh/dwk-part1:exercise10b
+          volumeMounts:
+            - name: shared
+              mountPath: /shared

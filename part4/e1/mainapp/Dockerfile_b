@@ -1,0 +1,4 @@
+FROM node:lts-alpine
+COPY database.js index_b.js package* ./
+RUN npm ci
+ENTRYPOINT ["node","index_b.js"]

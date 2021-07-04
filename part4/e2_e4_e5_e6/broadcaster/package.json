@@ -1,0 +1,18 @@
+{
+  "name": "p4e06",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "watch": "nodemon index.js"
+  },
+  "author": "",
+  "dependencies": {
+    "got": "^11.8.0",
+    "nats": "^1.4.12"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  }
+}

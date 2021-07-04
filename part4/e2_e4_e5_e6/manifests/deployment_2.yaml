@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pgsql-ss
+  namespace: project-ns
+spec:
+  serviceName: pgsql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgapp
+  template:
+    metadata:
+      labels:
+        app: pgapp
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:12
+          ports:
+            - name: pgsql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 100Mi

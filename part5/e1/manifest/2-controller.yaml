@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummysite-controller-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dummysite-controller
+  template:
+    metadata:
+      labels:
+        app: dummysite-controller
+    spec:
+      serviceAccountName: dummysite-controller-account
+      containers:
+        - name: dummysite-controller
+          image: mcfizh/dwk-part1:p5e01-controller
+          imagePullPolicy: Always
+          volumeMounts:
+          - mountPath: /shared
+            name: shared
+      volumes:
+      - name: shared
+        persistentVolumeClaim:
+          claimName: app-claim

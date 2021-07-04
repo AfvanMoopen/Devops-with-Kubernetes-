@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e10-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex10
+  template:
+    metadata:
+      labels:
+        app: ex10
+    spec:
+      volumes:
+        - name: shared
+          emptyDir: {}
+      containers:
+        - name: ex10a
+          image: mcfizh/dwk-part1:exercise10a
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+        - name: ex10b
+          image: mcfizh/dwk-part1:exercise10b
+          volumeMounts:
+            - name: shared
+              mountPath: /shared

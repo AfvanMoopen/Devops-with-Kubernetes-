@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgsql-pwd
+  namespace: project-ns
+data:
+  POSTGRES_PASSWORD: c2FsYXNhbmExMjM0
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-claim
+  namespace: project-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pgsql-ss
+  namespace: project-ns
+spec:
+  serviceName: pgsql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgapp
+  template:
+    metadata:
+      labels:
+        app: pgapp
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:12
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "80Mi"            
+          ports:
+            - name: pgsql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: project-ns
+  name: p3e08-backend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p3e08-backend
+  template:
+    metadata:
+      labels:
+        app: p3e08-backend
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: p3e08-back-cont
+          image: mcfizh/dwk-part1:p2e8-backend
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: "50m"
+              memory: "50Mi"            
+          env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: project-ns
+  name: p3e08-frontend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p3e08-frontend
+  template:
+    metadata:
+      labels:
+        app: p3e08-frontend
+    spec:
+      containers:
+        - name: p3e08-front-cont
+          image: mcfizh/dwk-part1:p2e8-frontend
+          resources:
+            limits:
+              cpu: "50m"
+              memory: "50Mi"            
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  namespace: project-ns
+  name: p3cron
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: p3e08-cron-cont
+            image: mcfizh/dwk-part1:p2e9-cron
+            env:
+              - name: POSTGRES_HOST
+                value: pgsql-svc
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pgsql-pwd
+                    key: POSTGRES_PASSWORD
+          restartPolicy: OnFailure

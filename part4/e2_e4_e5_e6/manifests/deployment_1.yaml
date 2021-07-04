@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgsql-pwd
+  namespace: project-ns
+data:
+  POSTGRES_PASSWORD: c2FsYXNhbmExMjM0
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: cpu-load
+  namespace: project-ns
+spec:
+  metrics:
+  - name: cpu-load
+    initialDelay: 10m
+    successCondition: result < 0.4
+    provider:
+      prometheus:
+        address: http://kube-prometheus-stack-1606-prometheus.prometheus.svc.cluster.local:9090
+        query: |
+          scalar(sum(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="project-ns"}[1m]))))
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  namespace: project-ns
+  name: p4e02-backend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p4e02-backend
+  strategy:
+    canary:
+      steps:
+      - setWeight: 50
+      - analysis:
+          templates:
+          - templateName: cpu-load
+  template:
+    metadata:
+      labels:
+        app: p4e02-backend
+    spec:
+      volumes:
+        - name: shared
+          persistentVolumeClaim:
+              claimName: app-claim
+      containers:
+        - name: p4e02-back-cont
+          image: mcfizh/dwk-part1:p4e02-backend
+          imagePullPolicy: Always
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            httpGet:
+              path: /healthz
+              port: 3000
+          env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+            - name: NATS
+              value: nats://my-nats.default.svc.cluster.local:4222
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  namespace: project-ns
+  name: p4e02-frontend-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p4e02-frontend
+  strategy:
+    canary:
+      steps:
+      - setWeight: 50
+      - analysis:
+          templates:
+          - templateName: cpu-load
+  template:
+    metadata:
+      labels:
+        app: p4e02-frontend
+    spec:
+      containers:
+        - name: p4e02-front-cont
+          image: mcfizh/dwk-part1:p4e02-frontend
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  namespace: project-ns
+  name: p4e06-broadcaster-dep
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: p4e06-broadcaster
+  strategy:
+    canary:
+      steps:
+      - setWeight: 50
+      - analysis:
+          templates:
+          - templateName: cpu-load
+  template:
+    metadata:
+      labels:
+        app: p4e06-broadcaster
+    spec:
+      containers:
+        - name: p4e06-bcast-cont
+          image: mcfizh/dwk-part1:p4e06-bcast
+          imagePullPolicy: Always
+          env:
+            - name: APIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-api-key
+                  key: APIKEY
+            - name: NATS
+              value: nats://my-nats.default.svc.cluster.local:4222
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  namespace: project-ns
+  name: p2cron
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: p4e02-cron-cont
+            image: mcfizh/dwk-part1:p4e02-cron
+            env:
+              - name: POSTGRES_HOST
+                value: pgsql-svc
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pgsql-pwd
+                    key: POSTGRES_PASSWORD
+          restartPolicy: OnFailure

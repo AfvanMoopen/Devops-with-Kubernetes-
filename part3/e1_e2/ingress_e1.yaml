@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgsql-svc
+  namespace: mainapp-ns
+spec:
+  ports:
+  - port: 5432
+  clusterIP: None
+  selector:
+    app: pgapp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: mainapp-ns
+  name: pongapp-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: p3e01-pong
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 3000

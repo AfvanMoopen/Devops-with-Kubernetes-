@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: mainapp-ns
+  name: p2e01-pong-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p2e01-pong
+  template:
+    metadata:
+      labels:
+        app: p2e01-pong
+    spec:
+      containers:
+        - name: p2e01-pong-container
+          image: mcfizh/dwk-part1:p2e01-pong
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: mainapp-ns
+  name: p2e01-main-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p2e01-main
+  template:
+    metadata:
+      labels:
+        app: p2e01-main
+    spec:
+      volumes:
+        - name: shared
+          emptyDir: {}
+      containers:
+        - name: p2e01-main-a
+          image: mcfizh/dwk-part1:p2e01-main-a
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+        - name: p2e01-main-b
+          image: mcfizh/dwk-part1:p2e01-main-b
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+          envFrom:
+            - configMapRef:
+                name: p2-message

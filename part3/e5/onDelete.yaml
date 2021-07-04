@@ -1,0 +1,53 @@
+name: Delete branch application
+
+on:
+  delete:
+
+env:
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: europe-north1-a
+  B_IMAGE: dwk-backend
+  F_IMAGE: dwk-frontend
+  C_IMAGE: dwk-cron
+
+jobs:
+  setup-build-publish-deploy:
+    name: Remove image from docker
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Create image names
+      run: |-
+        echo "B_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$B_IMAGE:${{ github.event.ref }}-$GITHUB_SHA" >> $GITHUB_ENV
+        echo "F_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$F_IMAGE:${{ github.event.ref }}-$GITHUB_SHA" >> $GITHUB_ENV
+        echo "C_IMAGE_WITH_TAG=gcr.io/${{ secrets.GKE_PROJECT }}/$C_IMAGE:${{ github.event.ref }}-$GITHUB_SHA" >> $GITHUB_ENV
+
+    - uses: google-github-actions/setup-gcloud@master
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: ${{ secrets.GKE_PROJECT }}
+
+    - run: gcloud --quiet auth configure-docker
+
+    - run: gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+
+    - name: Set up Kustomize
+      run: |-
+        cd part3/e3
+        curl -sfLo kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.7.0/kustomize_v3.7.0_linux_amd64.tar.gz
+        tar xf kustomize.tgz
+        chmod u+x ./kustomize
+
+    - name: Deploy
+      run: |-
+        cd part3/e3
+        kubectl config set-context --current --namespace=${{ github.event.ref }}
+        ./kustomize edit set namespace ${{ github.event.ref }}
+        ./kustomize edit set image BACKEND/IMAGE=$B_IMAGE_WITH_TAG
+        ./kustomize edit set image FRONTEND/IMAGE=$F_IMAGE_WITH_TAG
+        ./kustomize edit set image CRON/IMAGE=$C_IMAGE_WITH_TAG
+        kubectl delete -k .
+        kubectl delete namespace ${{ github.event.ref }} || true

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- deployment.yaml
+- ingress.yaml
+images:
+- name: BACKEND/IMAGE
+  newName: mcfizh/dwk-part1:p2e8-backend
+- name: FRONTEND/IMAGE
+  newName: mcfizh/dwk-part1:p2e8-frontend
+- name: CRON/IMAGE
+  newName: mcfizh/dwk-part1:p2e9-cron

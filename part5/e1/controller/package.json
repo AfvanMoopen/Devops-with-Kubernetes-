@@ -1,0 +1,20 @@
+{
+  "name": "controller",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "watch": "NODE_ENV=dev nodemon index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@kubernetes/client-node": "^0.13.0",
+    "got": "^11.8.1",
+    "handlebars": "^4.7.6",
+    "json-stream": "^1.0.0",
+    "nodemon": "^2.0.6",
+    "short-uuid": "^4.1.0"
+  }
+}

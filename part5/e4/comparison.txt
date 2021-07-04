@@ -1,0 +1,22 @@
+Tanzu (Pivotal) vs OpenShift:
+
+Tanzu (Pivotal):
+
++ Tanzu is more oriented towards hiding implementation details
++ Run on multiple Linux distros
+- Architechture contains propietary components
+- Strong preference towards vmware as platform to run on
+- Pricing model is based on number of pods
+- Prefers only stateless applications
+
+
+OpenShift:
+
+- Openshift is more geared toward tech savvy people with somewhat more complex setup
+- Requires RHEL distribution to run
++ Stack is build mostly on open source software
++ Doesn't really define the preferred platform type (plain hardware vs virtualized platform)
++ Pricing model is based on worker node core count (so efficient apps reduce overall costs)
++ Un-opinionated: Allow to run either stateful or stateless applications
+
+And the winner is: Openshift

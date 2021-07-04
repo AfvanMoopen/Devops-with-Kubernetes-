@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-dep
+  namespace: project-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      annotations:
+        config.linkerd.io/skip-outbound-ports: "4222"
+        linkerd.io/inject: enabled
+      labels:
+        app: backend
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_HOST
+          value: pgsql-svc
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: pgsql-pwd
+        - name: NATS
+          value: nats://my-nats.default.svc.cluster.local:4222
+        image: mcfizh/dwk-part1:p4e02-backend
+        name: back-cont
+        volumeMounts:
+        - mountPath: /shared
+          name: shared
+      volumes:
+      - name: shared
+        persistentVolumeClaim:
+          claimName: app-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-dep
+  namespace: project-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      annotations:
+        linkerd.io/inject: enabled
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - image: mcfizh/dwk-part1:p4e02-frontend
+        name: front-cont
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broadcaster-dep
+  namespace: project-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broadcaster
+  template:
+    metadata:
+      annotations:
+        config.linkerd.io/skip-outbound-ports: "4222"
+        linkerd.io/inject: enabled
+      labels:
+        app: broadcaster
+    spec:
+      containers:
+      - env:
+        - name: APIKEY
+          valueFrom:
+            secretKeyRef:
+              key: APIKEY
+              name: telegram-api-key
+        - name: NATS
+          value: nats://my-nats.default.svc.cluster.local:4222
+        image: mcfizh/dwk-part1:p4e06-bcast
+        name: bcast-cont
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cronjob
+  namespace: project-ns
+spec:
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            linkerd.io/inject: enabled
+        spec:
+          containers:
+          - env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: pgsql-pwd
+            image: mcfizh/dwk-part1:p4e02-cron
+            name: cron-cont
+          restartPolicy: OnFailure
+  schedule: '*/15 * * * *'
+---

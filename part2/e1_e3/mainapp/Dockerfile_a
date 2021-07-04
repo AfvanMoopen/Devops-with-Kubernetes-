@@ -1,0 +1,4 @@
+FROM node:lts-alpine
+COPY index_a.js package* ./
+RUN npm ci
+ENTRYPOINT ["node","index_a.js"]

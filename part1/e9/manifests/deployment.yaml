@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p1e9-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ex9
+  template:
+    metadata:
+      labels:
+        app: ex9
+    spec:
+      containers:
+        - name: ex9
+          image: mcfizh/dwk-part1:exercise9

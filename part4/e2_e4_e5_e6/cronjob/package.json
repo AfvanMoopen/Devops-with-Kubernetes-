@@ -1,0 +1,15 @@
+{
+  "name": "p4e02",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "dependencies": {
+    "got": "^11.8.0",
+    "pg": "^8.5.0",
+    "uuid": "^8.3.1"
+  }
+}

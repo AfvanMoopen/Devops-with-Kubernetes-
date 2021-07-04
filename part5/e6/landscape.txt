@@ -1,0 +1,34 @@
+Used directly:
+
+* Kubernetes : The whole course
+* Postgresql : application database
+* Helm : Package manager
+* Docker : Container utility
+* Grafana + Prometheus + Loki : Pod monitoring
+* Knative : Serverless platform
+* K3S : Kubernetes distro
+* Nginx : Used to serve frontpage of application
+* GKE : Deployed part 3 to google
+* Docker registry: Stored images here
+* Google container registry : Stored images from part 3 here
+* Linkerd: Service mesh
+* Docker compose : Ran dev environments here
+* Podman : Fedora uses podman instead of docker to build images
+* Nats : Application messaging service
+
+Used indirectly:
+
+* Etcd + CoreDns : As part of kubernetes
+* Traefik : Kubernetes ingress
+* Contour : Knative ingress
+
+Used outside course:
+
+* Ansible + Terraform : Deploy automation
+* Puppet : Test automation
+* Elastic + Elastic APM : Application performance monitoring
+* MySQL + ArangoDB + MariaDB + SQL server + Mongodb : Application databases
+* Openshift : Kubernetes distro
+* New Relic : Application state monitoring
+* Redis : Data cache
+* Snyk : Vulnerability scanner

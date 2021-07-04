@@ -1,0 +1,67 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: dummysites.stable.dwk
+spec:
+  group: stable.dwk
+  scope: Namespaced
+  names:
+    kind: DummySite
+    plural: dummysites
+    singular: dummysite
+    shortNames:
+    - dsite
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                website_url:
+                  type: string
+      additionalPrinterColumns:
+        - name: Website URL
+          type: string
+          description: Website to scape
+          jsonPath: .spec.website_url
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dummysite-controller-account
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dummysite-controller-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: ["stable.dwk"]
+  resources: ["dummysites"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dummysite-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dummysite-controller-role
+subjects:
+- kind: ServiceAccount
+  name: dummysite-controller-account
+  namespace: default

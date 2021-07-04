@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{deploymentName}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{deploymentLabel}}
+  template:
+    metadata:
+      labels:
+        app: {{deploymentLabel}}
+    spec:
+      containers:
+        - name: {{containerName}}
+          image: nginx:1.18
+          env:
+          - name: NGINX_HOST
+            value: {{siteHost}}
+          volumeMounts:
+          - name: shared
+            mountPath: /usr/share/nginx/html
+            subPath: {{sitePath}}
+      volumes:
+      - name: shared
+        persistentVolumeClaim:
+          claimName: app-claim

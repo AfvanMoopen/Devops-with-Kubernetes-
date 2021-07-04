@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: project-ns
+  name: p2e4-backend-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: p2e4-backend
+  ports:
+  - port: 2345
+    protocol: TCP
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: project-ns
+  name: p2e4-frontend-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: p2e4-frontend
+  ports:
+  - port: 2346
+    protocol: TCP
+    targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: project-ns
+  name: p2e4-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/rule-type: "PathPrefixStrip"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        backend:
+          serviceName: p2e4-backend-svc
+          servicePort: 2345
+      - path: /
+        backend:
+          serviceName: p2e4-frontend-svc
+          servicePort: 2346

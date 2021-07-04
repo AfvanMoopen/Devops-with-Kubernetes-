@@ -1,0 +1,1 @@
+I'm going to keep on using postgres container in kubernetes, since it doesn't require any extra effort to setup and take down. Using GCS would provide automated backups, scaling and HA, but as this project doesn't produce any real data it doesn't benefit from any of those features. 

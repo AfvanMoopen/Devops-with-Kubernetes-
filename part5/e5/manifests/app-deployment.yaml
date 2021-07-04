@@ -1,0 +1,41 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pong-app
+  namespace: mainapp-ns
+spec:
+  template:
+    metadata:
+      name: pong-app-v1
+    spec:
+      containers:
+        - image: mcfizh/dwk-part1:p5e05-pong
+          env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: main-app
+  namespace: mainapp-ns
+spec:
+  template:
+    metadata:
+      name: main-app-v1
+    spec:
+      containers:
+        - image: mcfizh/dwk-part1:p5e05-main
+          env:
+            - name: POSTGRES_HOST
+              value: pgsql-svc
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql-pwd
+                  key: POSTGRES_PASSWORD
